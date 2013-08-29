@@ -14,6 +14,13 @@
 
 using namespace std;
 
+enum Status {
+	Left = -1,
+	Right = 1,
+	Idle = 0,
+	Jump = 2
+};
+
 const int maxWidth = 60;
 const int maxHeight = 20;
 vector< vector<char> > map;
@@ -24,6 +31,7 @@ const int maxJumpHeight = 3;
 bool running = true;
 bool jumping = false;
 const int frequency = 60;
+Status status = Status::Idle;
 
 void loadMap();
 void update();
@@ -52,6 +60,7 @@ void loadMap()
 void update()
 {
 	map[pos_x][pos_y] = ' ';
+	status = Status::Idle;
 	if(jumping)
 	{
 		if(playerHeight < maxJumpHeight && map[pos_x - 1][pos_y] == ' ')
@@ -74,18 +83,34 @@ void update()
 
 	if(GetAsyncKeyState(VK_LEFT))
 		if(map[pos_x][pos_y - 1] == ' ')
+		{
+			status = Status::Left;
 			pos_y--;
+		}
 
 	if(GetAsyncKeyState(VK_RIGHT))
 		if(map[pos_x][pos_y + 1] == ' ')
+		{
+			status = Status::Right;
 			pos_y++;
+		}
 
 	if(GetAsyncKeyState(VK_UP))
 		if(map[pos_x + 1][pos_y] == '*' || map[pos_x + 1][pos_y] == '+')
+		{
+			status = Status::Jump;
 			jumping = true;
+		}
 	
 	// set player!
-	map[pos_x][pos_y] = 'X';
+	switch(status)
+	{
+		case Status::Left: map[pos_x][pos_y] = 'q'; break;
+		case Status::Right: map[pos_x][pos_y] = 'p'; break;
+		case Status::Jump: map[pos_x][pos_y] = 'Y'; break;
+		case Status::Idle: map[pos_x][pos_y] = 'X'; break;
+		default:map[pos_x][pos_y] = 'X'; break;
+	}
 }
 
 void render()
@@ -94,9 +119,9 @@ void render()
 	{
 		for(int x = 0; x < maxWidth; ++x)
 		{
-			cout << map[y][x];
+			printf("%c", map[y][x]);
 		}
-		cout << "\n";
+		printf("\n");
 	}
 	
 	system("cls");
@@ -114,16 +139,12 @@ int main()
 	map[pos_x][pos_y] = 'X';
 	
 	// background sound
-	PlaySound("back.wav", NULL, SND_ASYNC);
+	PlaySound("back.wav", NULL, SND_ASYNC | SND_LOOP);
 	time_t seconds;
 
 	/* GAME LOOP */
 	while(running)
 	{
-		seconds = time(NULL);
-		if(!(seconds % 7))
-			PlaySound("back.wav", NULL, SND_ASYNC);
-
 		if((GetTickCount() - timeLastCall) > (1000 / frequency))
 		{
 			update();
@@ -131,5 +152,11 @@ int main()
 		}
 		render();
 	}
-	return 0;
+
+	system("cls");
+	printf("%s", "*************\n* Game Over *\n*************\n\nPress any key to continue ...");
+	char res = '\0';
+	cin >> res;
+
+	return EXIT_SUCCESS;
 }
